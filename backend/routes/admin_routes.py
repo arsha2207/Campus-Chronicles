@@ -15,6 +15,8 @@ def pending_articles():
 @admin_bp.route("/approve/<int:id>", methods=["POST"])
 def approve_article(id):
     article = Article.query.get(id)
+    if not article:
+        return {"error": "Article not found"}, 404
     article.status = "approved"
     article.remark = None
     db.session.commit()

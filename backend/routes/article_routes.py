@@ -6,7 +6,9 @@ article_bp = Blueprint("article", __name__)
 @article_bp.route("/submit", methods=["POST"])
 def submit_article():
     data = request.json
-
+    if not data.get("title") or not data.get("content") or not data.get("user_id"):
+        return jsonify({"message": "Missing required fields"}), 400
+        
     article = Article(
         title=data["title"],
         content=data["content"],
@@ -27,7 +29,7 @@ def approved_articles():
         "content": a.content
     } for a in articles])
 
-@article_bp.route("/myarticles/<int:user_id>")
+@article_bp.route("/<int:user_id>")
 def my_articles(user_id):
     articles = Article.query.filter_by(user_id=user_id).all()
 
