@@ -1,0 +1,162 @@
+/* ─── Reset ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── CSS Custom Properties ─── */
+:root {
+  --ink:    #1a1008;
+  --red:    #b5121b;
+  --gold:   #c8960c;
+  --paper:  #fdf6e3;
+  --paper2: #f5ead0;
+  --gray:   #6b5c4e;
+  --light:  #e8dcc8;
+  --bg:     #cfc4aa;
+}
+
+/* ─── Base ─── */
+body {
+  background: var(--bg);
+  font-family: 'Libre Baskerville', Georgia, serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar       { width: 7px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--ink); }
+
+/* ─── Animations ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.fade-up { animation: fadeUp 0.4s ease; }
+
+/* ─── Global overflow guard ─── */
+img { max-width: 100%; height: auto; display: block; }
+
+/* ════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ════════════════════════════════════════ */
+
+/* ── Masthead title ── */
+.mast-title { font-size: clamp(28px, 8vw, 72px) !important; }
+.mast-meta  { display: flex; }
+@media (max-width: 520px) {
+  .mast-meta { display: none !important; }
+}
+
+/* ── TopBar ── */
+@media (max-width: 580px) {
+  .topbar { flex-wrap: wrap; gap: 6px !important; padding: 6px 14px !important; }
+  .topbar-left { display: none !important; }
+}
+
+/* ── HomePage grids ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 2fr 1px 1fr 1px 1fr;
+  gap: 0 20px;
+  padding: 18px 22px;
+}
+.btm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  padding: 0 22px 22px;
+}
+@media (max-width: 960px) {
+  .main-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; padding: 16px !important; }
+  .main-grid .vrule { display: none !important; }
+  .btm-grid  { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 560px) {
+  .main-grid { grid-template-columns: 1fr !important; padding: 12px !important; }
+  .btm-grid  { grid-template-columns: 1fr !important; }
+}
+.art-card-hover:hover { opacity: 0.88; }
+.hl-hover:hover { color: #b5121b !important; }
+
+/* ── Article page two-column layout ── */
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+@media (max-width: 860px) {
+  .article-layout { grid-template-columns: 1fr !important; gap: 28px !important; }
+}
+
+/* ── Admin layout ── */
+.admin-shell {
+  display: flex;
+  min-height: 500px;
+}
+.admin-sb { width: 210px; flex-shrink: 0; }
+@media (max-width: 700px) {
+  .admin-shell { flex-direction: column !important; }
+  .admin-sb    { width: 100% !important; }
+}
+
+/* ── Stats row ── */
+.stats-row {
+  display: flex;
+  gap: 14px;
+  padding: 18px 22px 0;
+  flex-wrap: wrap;
+}
+.stats-row > * { flex: 1 1 120px; }
+
+/* ── Search form grid ── */
+.search-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 13px;
+  align-items: end;
+}
+@media (max-width: 640px) {
+  .search-form-grid { grid-template-columns: 1fr 1fr !important; }
+  .search-form-grid .search-btn-wrap { grid-column: 1 / -1; }
+}
+@media (max-width: 400px) {
+  .search-form-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Notification filter bar ── */
+.filter-bar { display: flex; flex-wrap: wrap; }
+@media (max-width: 480px) {
+  .filter-bar button {
+    flex: 1 1 calc(50% - 1px) !important;
+    border-bottom: 1px solid #1a1008 !important;
+  }
+}
+
+/* ── Submit page steps bar ── */
+.steps-bar { display: flex; overflow: hidden; border: 1px solid #1a1008; margin-bottom: 22px; }
+@media (max-width: 520px) {
+  .steps-bar { flex-direction: column !important; }
+  .steps-bar > div { border-right: none !important; border-bottom: 1px solid #1a1008; }
+}
+
+/* ── Register / Login two-column form row ── */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 440px) {
+  .form-row-2 { grid-template-columns: 1fr !important; }
+}
+
+/* ── Page inner padding on mobile ── */
+@media (max-width: 560px) {
+  .page-inner { padding: 18px 14px 32px !important; }
+}
