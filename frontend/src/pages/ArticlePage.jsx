@@ -22,27 +22,23 @@ import Badge from '../components/Badge'
 import { TbBtn } from '../components/Buttons'
 import Ticker from '../components/Ticker'
 import { CATEGORY_COLORS } from '../utils/constants'
-import { DEMO_ARTICLES } from '../data/demoData'
+import { fetchArticleById } from '../utils/api'
 
-// Demo body expansion — replace with real Flask data in production
-function generateBody(article) {
-  return [
-    article.sm,
-    'The development marks a significant milestone for the institution and its students. Faculty members and administrative staff have expressed strong support for the initiative, citing its potential long-term impact on the academic community.',
-    '"This represents exactly the kind of progress we\'ve been working toward," said a senior official familiar with the matter. "Our students deserve the best, and we are committed to delivering that."',
-    'Students who were present described the atmosphere as energetic and hopeful. Many expressed excitement about the opportunities that lie ahead, while others raised thoughtful questions about implementation and accessibility.',
-    'The initiative follows months of planning and consultation with various stakeholders across departments. Committees were formed, feedback was gathered, and the final proposal was refined through multiple rounds of review before receiving final approval.',
-    'Looking ahead, organizers have outlined a phased approach to ensure smooth execution. The first phase is expected to be completed within the coming semester, with subsequent stages rolling out over the next academic year.',
-    'For updates and further information, students are encouraged to check the official college portal or reach out to the relevant department directly. The editorial team at Campus Chronicle will continue to follow this story as it develops.',
-  ].join('\n\n')
-}
+export default function ArticlePage({ article, allArticles = [], onBack, onArticleClick }) {
+  const [copied,   setCopied]   = useState(false)
+  const [pdfOpen,  setPdfOpen]  = useState(false)
+  const [fullData, setFullData] = useState(null)   // full article from Flask
 
-export default function ArticlePage({ article, allArticles = DEMO_ARTICLES, onBack, onArticleClick }) {
-  const [copied, setCopied]   = useState(false)
-  const [pdfOpen, setPdfOpen] = useState(false)
+  // Fetch full article content from Flask
+  useEffect(() => {
+    fetchArticleById(article.id)
+      .then(data => setFullData(data.article))
+      .catch(() => setFullData(article))   // fallback to what we already have
+  }, [article.id])
 
-  const related = allArticles.filter(a => a.cat === article.cat && a.id !== article.id).slice(0, 3)
-  const fullBody = article.body || generateBody(article)
+  const data     = fullData || article                // use Flask data once loaded
+  const fullBody = data.body || data.sm || ''
+  const related  = allArticles.filter(a => a.cat === article.cat && a.id !== article.id).slice(0, 3)
   const accent   = CATEGORY_COLORS[article.cat] || '#1a1008'
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [article.id])
@@ -63,7 +59,7 @@ export default function ArticlePage({ article, allArticles = DEMO_ARTICLES, onBa
       fullBody,
       '',
       '─'.repeat(60),
-      '© 2025 Campus Chronicle · The Voice of the Campus',
+      '© 2026 Campus Chronicle · The Voice of the Campus',
     ]
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
     const url  = URL.createObjectURL(blob)
@@ -280,13 +276,13 @@ export default function ArticlePage({ article, allArticles = DEMO_ARTICLES, onBa
                 })}
               </div>
 
-              {/* Pull quote */}
+              {/* Pull quote
               <blockquote style={{ margin: '28px 0', padding: '18px 24px', borderLeft: `5px solid ${accent}`, background: '#f5ead0', fontFamily: "'Playfair Display',serif", fontSize: 18, fontStyle: 'italic', lineHeight: 1.55, color: '#1a1008' }}>
                 "This represents exactly the kind of progress we've been working toward. Our students deserve the best."
                 <cite style={{ display: 'block', marginTop: 10, fontFamily: "'Source Sans 3',sans-serif", fontSize: 11, fontStyle: 'normal', fontWeight: 700, color: '#6b5c4e', letterSpacing: '.05em' }}>
                   — Senior Official, RIT Administration
                 </cite>
-              </blockquote>
+              </blockquote> */}
 
               {/* Download banner */}
               <div style={{ marginTop: 36, padding: '20px 24px', background: '#1a1008', color: '#e8dcc8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>

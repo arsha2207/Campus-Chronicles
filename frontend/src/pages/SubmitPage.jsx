@@ -6,6 +6,7 @@ import { FLabel, FInput, FSel, FTextarea } from '../components/FormElements'
 import { Btn } from '../components/Buttons'
 import useToast from '../hooks/useToast'
 import { CATEGORIES } from '../utils/constants'
+import { submitArticle, formatWithAI } from '../utils/api'
 
 export default function SubmitPage({ user, onBack }) {
   const [step,    setStep]    = useState(1)
@@ -13,7 +14,8 @@ export default function SubmitPage({ user, onBack }) {
   const [cat,     setCat]     = useState('Campus News')
   const [tags,    setTags]    = useState('')
   const [content, setContent] = useState('')
-  const [imgData, setImgData] = useState(null)
+  const [imgData, setImgData] = useState(null)   // base64 for preview
+  const [imgFile, setImgFile] = useState(null)   // actual File for upload
   const [imgName, setImgName] = useState('')
   const [aiText,  setAiText]  = useState('')
   const [aiLoad,  setAiLoad]  = useState(false)
@@ -23,28 +25,25 @@ export default function SubmitPage({ user, onBack }) {
   const handleImg = file => {
     if (!file || !file.type.startsWith('image/')) { show('Select an image file.', 'error'); return }
     if (file.size > 5 * 1024 * 1024) { show('Image must be under 5MB.', 'error'); return }
+    setImgFile(file)                              // ✅ save actual File object
     const r = new FileReader()
     r.onload = e => { setImgData(e.target.result); setImgName(file.name) }
     r.readAsDataURL(file)
   }
 
-  const runAI = async () => {
-    if (!content.trim()) { show('Write your article content first.', 'error'); return }
-    setAiLoad(true)
-    try {
-      const res  = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 1000,
-          messages: [{ role: 'user', content: `You are a professional newspaper editor. Format and improve this article for a college newspaper. Fix grammar, improve structure, use formal newspaper style. Return only the formatted article starting with the headline.\n\nTitle: ${title}\nContent: ${content}` }],
-        }),
-      })
-      const data = await res.json()
-      setAiText(data.content?.map(c => c.text || '').join('') || 'AI unavailable.')
-    } catch { setAiText('AI formatting unavailable. Please edit manually.') }
-    setAiLoad(false)
+const runAI = async () => {
+  if (!content.trim()) { show('Write your article content first.', 'error'); return }
+  setAiLoad(true)
+  try {
+    const data = await formatWithAI(title, content)
+    console.log('AI response:', data)
+    setAiText(data.formatted || 'AI unavailable.')
+  } catch (e) {
+    console.error('AI error:', e.message)   // ← shows exact error
+    setAiText('AI formatting unavailable. Please edit manually.')
   }
+  setAiLoad(false)
+}
 
   const applyAI = () => {
     const lines = aiText.split('\n').filter(l => l.trim())
@@ -53,6 +52,25 @@ export default function SubmitPage({ user, onBack }) {
     setAiText('')
   }
 
+  const handleSubmit = async () => {
+    try {
+      const formData = new FormData()
+      formData.append('title',    title)
+      formData.append('content',  content)
+      formData.append('category', cat)
+      formData.append('tags',     tags)
+      if (imgFile) formData.append('image', imgFile)
+
+      console.log('Submitting:', { title, content, cat })  // ← check values
+      const result = await submitArticle(formData)
+      console.log('Submit result:', result)
+      setDone(true)
+    } catch (e) {
+      console.error('Submit error:', e.message)  // ← shows exact error
+      show(e.message || 'Submission failed. Please try again.', 'error')
+    }
+  }
+  
   const navItems = [
     { label: 'Home', id: 'home' },
     { label: 'Submit Article', id: 'submit' },
@@ -130,7 +148,7 @@ export default function SubmitPage({ user, onBack }) {
                   <div>
                     <img src={imgData} alt="" style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', marginBottom: 8, border: '1px solid #e8dcc8' }} />
                     <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 11, color: '#6b5c4e' }}>{imgName}</div>
-                    <button onClick={e => { e.stopPropagation(); setImgData(null); setImgName('') }}
+                    <button onClick={e => { e.stopPropagation(); setImgData(null); setImgName(''); setImgFile(null) }}
                       style={{ marginTop: 10, padding: '6px 14px', background: '#b5121b', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'Source Sans 3',sans-serif", fontSize: 10 }}>
                       ✕ Remove
                     </button>
@@ -146,7 +164,11 @@ export default function SubmitPage({ user, onBack }) {
               <input id="img-inp" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImg(e.target.files[0])} />
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Btn dark onClick={() => setStep(2)}>Next: AI Format →</Btn>
+                <Btn dark onClick={() => {
+                  if (!title.trim())   { show('Please enter a headline.', 'error'); return }
+                  if (!content.trim()) { show('Please write article content.', 'error'); return }
+                  setStep(2)
+                }}>Next: AI Format →</Btn>
               </div>
             </div>
           )}
@@ -191,7 +213,7 @@ export default function SubmitPage({ user, onBack }) {
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', flexWrap: 'wrap' }}>
                 <Btn gray onClick={() => setStep(2)}>← Back</Btn>
-                <Btn red  onClick={() => setDone(true)}>📨 Submit to Editorial Team</Btn>
+                <Btn red  onClick={handleSubmit}>📨 Submit to Editorial Team</Btn>
               </div>
             </div>
           )}

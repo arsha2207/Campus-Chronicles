@@ -23,7 +23,7 @@ export default function TopBar({ user, onAdmin, onLogout }) {
     }}>
       <div className="topbar-left" style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
         <span>📍 RIT Campus Edition</span>
-        <span style={{ color: '#c8960c' }}>☀ Sunny, 32°C</span>
+        {/* <span style={{ color: '#c8960c' }}>☀ Sunny, 32°C</span> */}
         <span style={{ color: '#a09080' }}>{time}</span>
       </div>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>

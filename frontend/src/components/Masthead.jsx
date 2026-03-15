@@ -12,12 +12,12 @@ export default function Masthead({ navItems, activeNav, onNav }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         borderBottom: '1px solid #1a1008', paddingBottom: 7, marginBottom: 7,
       }}>
-        <div className="mast-meta" style={{
+        {/* <div className="mast-meta" style={{
           fontFamily: "'Source Sans 3', sans-serif", fontSize: 11,
           color: '#6b5c4e', lineHeight: 1.9, flexShrink: 0,
         }}>
           Vol. IV | No. 42<br />Est. 2021
-        </div>
+        </div> */}
 
         <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
           <div style={{
@@ -46,7 +46,7 @@ export default function Masthead({ navItems, activeNav, onNav }) {
           color: '#6b5c4e', lineHeight: 1.9, textAlign: 'right', flexShrink: 0,
         }}>
           Wednesday, March 4, 2025<br />
-          <strong style={{ color: '#b5121b' }}>FREE</strong>
+          {/* <strong style={{ color: '#b5121b' }}>FREE</strong> */}
         </div>
       </div>
 

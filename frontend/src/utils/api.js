@@ -47,7 +47,7 @@ async function request(path, options = {}) {
  * Returns: { user: { id, name, role, dept }, token }
  */
 export const login = (email, password) =>
-  request('/api/login', {
+  request('/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
@@ -59,7 +59,7 @@ export const login = (email, password) =>
  * Returns: { user: {...}, token }
  */
 export const register = (formData) =>
-  request('/api/register', {
+  request('/register', {
     method: 'POST',
     body: JSON.stringify(formData),
   })
@@ -75,20 +75,22 @@ export const register = (formData) =>
  */
 export const fetchArticles = (cat = 'All', page = 1) => {
   const params = new URLSearchParams({ cat, page })
-  return request(`/api/articles?${params}`)
+  return request(`/articles/approved?${params}`)
 }
+
+export const fetchArticleById = (id) => request(`/articles/${id}`)
 
 /**
  * Search articles (archive page)
  * GET /api/articles/search?q=...&cat=...&month=...
  * Returns: { results: [...] }
  */
-export const searchArticles = (q, cat, month) => {
+export const searchArticles = (q, cat, date) => {
   const params = new URLSearchParams()
-  if (q)     params.set('q',     q)
-  if (cat)   params.set('cat',   cat)
-  if (month) params.set('month', month)
-  return request(`/api/articles/search?${params}`)
+  if (q)    params.set('q',    q)
+  if (cat)  params.set('cat',  cat)
+  if (date) params.set('date', date)   // ← sends as "2025-03-04"
+  return request(`/articles/search?${params}`)
 }
 
 /**
@@ -100,7 +102,7 @@ export const searchArticles = (q, cat, month) => {
  */
 export const submitArticle = async (formData) => {
   const token = getToken()
-  const res = await fetch(`${API_BASE}/api/articles`, {
+  const res = await fetch(`${API_BASE}/articles/submit`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData, // FormData handles multipart automatically
@@ -119,14 +121,14 @@ export const submitArticle = async (formData) => {
  * GET /api/admin/pending
  * Returns: { articles: [...] }
  */
-export const fetchPending = () => request('/api/admin/pending')
+export const fetchPending = () => request('/admin/pending')
 
 /**
  * Get approved/published articles
  * GET /api/admin/approved
  * Returns: { articles: [...] }
  */
-export const fetchApproved = () => request('/api/admin/approved')
+export const fetchApproved = () => request('/admin/approved')
 
 /**
  * Approve an article
@@ -134,7 +136,7 @@ export const fetchApproved = () => request('/api/admin/approved')
  * Returns: { message: 'Approved' }
  */
 export const approveArticle = (id) =>
-  request(`/api/admin/approve/${id}`, { method: 'POST' })
+  request(`/admin/approve/${id}`, { method: 'POST' })
 
 /**
  * Reject an article
@@ -142,10 +144,10 @@ export const approveArticle = (id) =>
  * Body: { feedback: "..." }  (optional)
  * Returns: { message: 'Rejected' }
  */
-export const rejectArticle = (id, feedback = '') =>
-  request(`/api/admin/reject/${id}`, {
+export const rejectArticle = (id, remark = '') =>
+  request(`/admin/reject/${id}`, {
     method: 'POST',
-    body: JSON.stringify({ feedback }),
+    body: JSON.stringify({ remark }),
   })
 
 /**
@@ -153,14 +155,14 @@ export const rejectArticle = (id, feedback = '') =>
  * GET /api/admin/users
  * Returns: { users: [...] }
  */
-export const fetchUsers = () => request('/api/admin/users')
+export const fetchUsers = () => request('/admin/users')
 
 /**
  * Get publication statistics
  * GET /api/admin/stats
  * Returns: { stats: [{ category, count }] }
  */
-export const fetchStats = () => request('/api/admin/stats')
+export const fetchStats = () => request('/admin/stats')
 
 // ══════════════════════════════════════════════════════════════════════════
 //  NOTIFICATIONS
@@ -171,28 +173,28 @@ export const fetchStats = () => request('/api/admin/stats')
  * GET /api/notifications
  * Returns: { notifications: [...] }
  */
-export const fetchNotifications = () => request('/api/notifications')
+export const fetchNotifications = () => request('/notifications')
 
 /**
  * Mark a notification as read
  * PATCH /api/notifications/:id/read
  */
 export const markNotifRead = (id) =>
-  request(`/api/notifications/${id}/read`, { method: 'PATCH' })
+  request(`/notifications/${id}/read`, { method: 'PATCH' })
 
 /**
  * Mark all notifications as read
  * PATCH /api/notifications/read-all
  */
 export const markAllNotifsRead = () =>
-  request('/api/notifications/read-all', { method: 'PATCH' })
+  request('/notifications/read-all', { method: 'PATCH' })
 
 /**
  * Dismiss (delete) a notification
  * DELETE /api/notifications/:id
  */
 export const dismissNotif = (id) =>
-  request(`/api/notifications/${id}`, { method: 'DELETE' })
+  request(`/notifications/${id}`, { method: 'DELETE' })
 
 // ══════════════════════════════════════════════════════════════════════════
 //  AI FORMATTER  (can be proxied through Flask to keep your key secure)
@@ -208,7 +210,7 @@ export const dismissNotif = (id) =>
  * This keeps your Anthropic API key on the server, not the browser.
  */
 export const formatWithAI = (title, content) =>
-  request('/api/ai/format', {
+  request('/ai/format', {
     method: 'POST',
     body: JSON.stringify({ title, content }),
   })

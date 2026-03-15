@@ -19,7 +19,8 @@
 import { useState } from 'react'
 import { FLabel, FInput } from '../components/FormElements'
 import { Sbtn } from '../components/Buttons'
-import { DEMO_USERS } from '../data/demoData'
+// import { DEMO_USERS } from '../data/demoData'
+import { login, saveToken } from '../utils/api'
 
 export default function LoginPage({ onLogin, onRegister }) {
   const [email, setEmail] = useState('')
@@ -30,25 +31,18 @@ export default function LoginPage({ onLogin, onRegister }) {
   const handleLogin = async () => {
     setErr('')
 
-    // ── DEMO auth — replace this block with real API call ──────────────────
-    const found = DEMO_USERS.find(
-      (u) => u.email === email && u.password === pass
-    )
-    if (found) { onLogin(found); return; }
-    // ── End demo block ─────────────────────────────────────────────────────
+    if (!email || !pass) {
+      setErr('Please enter your email and password.')
+      return
+    }
 
-    // Real fetch example (uncomment when Flask is ready):
-    // try {
-    //   const data = await login(email, password)
-    //   saveToken(data.token)
-    //   onLogin(data.user)
-    // } catch (e) {
-    //   setErr(e.message || 'Login failed. Please try again.')
-    // }
-
-    setErr(
-      'Invalid credentials. Try: student@campus.edu / student123  or  admin@campus.edu / admin123'
-    )
+    try {
+      const data = await login(email, pass)   // ← pass not password
+      saveToken(data.token)
+      onLogin(data.user)
+    } catch (e) {
+      setErr(e.message || 'Login failed. Please try again.')
+    }
   }
 
   return (
@@ -67,7 +61,7 @@ export default function LoginPage({ onLogin, onRegister }) {
         style={{
           background: '#fdf6e3',
           width: '100%',
-          maxWidth: 440, width: '100%',
+          maxWidth: 440,
           boxShadow: '0 8px 40px rgba(0,0,0,.25)',
           border: '1px solid #1a1008',
           animation: 'fadeUp .4s ease',
@@ -218,7 +212,7 @@ export default function LoginPage({ onLogin, onRegister }) {
           <Sbtn onClick={handleLogin}>Sign In to Newsroom</Sbtn>
 
           {/* Demo credentials box */}
-          <div
+          {/* <div
             style={{
               marginTop: 14,
               padding: 10,
@@ -235,8 +229,8 @@ export default function LoginPage({ onLogin, onRegister }) {
             Student: student@campus.edu / student123
             <br />
             Admin: admin@campus.edu / admin123
-          </div>
-        </div>
+          </div> */}
+        </div> 
 
         {/* Footer */}
         <div

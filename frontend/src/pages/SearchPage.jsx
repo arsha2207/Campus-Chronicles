@@ -1,28 +1,31 @@
-// SearchPage.jsx — archive search with responsive layout and article click
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Ticker from '../components/Ticker'
 import Badge from '../components/Badge'
 import { RdBtn, TbBtn } from '../components/Buttons'
 import { FLabel, FSel } from '../components/FormElements'
 import { CATEGORIES, CATEGORY_COLORS } from '../utils/constants'
-import { DEMO_ARTICLES } from '../data/demoData'
-
-const ARCHIVE = DEMO_ARTICLES.map(a => ({ ...a, title: a.hl, mo: a.mo || 'March 2025' }))
-const MONTHS  = ['March 2025', 'February 2025', 'January 2025']
+import { searchArticles } from '../utils/api'
 
 export default function SearchPage({ onBack, onArticleClick }) {
-  const [q,     setQ]     = useState('')
-  const [cat,   setCat]   = useState('')
-  const [month, setMonth] = useState('')
+  const [q,       setQ]       = useState('')
+  const [cat,     setCat]     = useState('')
+  const [date, setDate] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
 
-  const isFiltered = q || cat || month
-  const results = ARCHIVE.filter(a => {
-    const mq = !q     || a.title.toLowerCase().includes(q.toLowerCase()) || a.sm.toLowerCase().includes(q.toLowerCase()) || a.au.toLowerCase().includes(q.toLowerCase())
-    const mc = !cat   || a.cat === cat
-    const mm = !month || a.mo  === month
-    return mq && mc && mm
-  })
+  const handleSearch = async () => {
+    setLoading(true)
+    setSearched(true)
+    try {
+      const data = await searchArticles(q, cat, date)
+      setResults(data.results || [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const click = a => onArticleClick && onArticleClick(a)
 
@@ -68,14 +71,21 @@ export default function SearchPage({ onBack, onArticleClick }) {
                 </FSel>
               </div>
               <div>
-                <FLabel>Month</FLabel>
-                <FSel value={month} onChange={e => setMonth(e.target.value)} style={{ marginBottom: 0 }}>
-                  <option value="">All Months</option>
-                  {MONTHS.map(m => <option key={m}>{m}</option>)}
-                </FSel>
+                <FLabel>Date</FLabel>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 13px',
+                    border: '1.5px solid #1a1008', background: '#fffef7',
+                    fontFamily: "'Libre Baskerville', serif",
+                    fontSize: 13, color: '#1a1008', outline: 'none',
+                  }}
+                />
               </div>
               <div className="search-btn-wrap" style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button onClick={() => {}} style={{ width: '100%', height: 42, padding: '0 18px', background: '#1a1008', color: '#fdf6e3', border: 'none', fontFamily: "'Source Sans 3',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                <button onClick={handleSearch} style={{ width: '100%', height: 42, padding: '0 18px', background: '#1a1008', color: '#fdf6e3', border: 'none', fontFamily: "'Source Sans 3',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
                   Search
                 </button>
               </div>
@@ -83,7 +93,10 @@ export default function SearchPage({ onBack, onArticleClick }) {
           </div>
 
           {/* Results */}
-          {isFiltered ? (
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>Searching…</div>
+
+          ) : searched ? (
             <>
               <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 12, color: '#6b5c4e', marginBottom: 16, borderBottom: '1px solid #e8dcc8', paddingBottom: 10 }}>
                 Found <strong style={{ color: '#1a1008' }}>{results.length}</strong> article{results.length !== 1 ? 's' : ''}{q ? ` matching "${q}"` : ''}
@@ -93,18 +106,12 @@ export default function SearchPage({ onBack, onArticleClick }) {
                 : results.map(a => <ResultCard key={a.id} article={a} onClick={() => click(a)} />)
               }
             </>
+
           ) : (
-            MONTHS.map(m => {
-              const arts = ARCHIVE.filter(a => a.mo === m)
-              return (
-                <div key={m}>
-                  <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 700, color: '#1a1008', borderBottom: '2px solid #1a1008', paddingBottom: 5, marginBottom: 12, marginTop: 20 }}>
-                    {m} <span style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 11, color: '#6b5c4e', fontWeight: 400 }}>({arts.length} articles)</span>
-                  </div>
-                  {arts.map(a => <ResultCard key={a.id} article={a} compact onClick={() => click(a)} />)}
-                </div>
-              )
-            })
+            <div style={{ textAlign: 'center', padding: 60, color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+              <div style={{ fontSize: 13 }}>Search by keyword, category, or month to find articles.</div>
+            </div>
           )}
         </div>
       </div>

@@ -5,13 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    // Proxy API calls to Flask during development
-    // This way you don't get CORS errors when calling Flask from React
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      }
-    }
+    '/articles': 'http://127.0.0.1:5000',
+    '/admin':    'http://127.0.0.1:5000',
+    '/login':    'http://127.0.0.1:5000',
+    '/register': 'http://127.0.0.1:5000',
+    '/ai':       'http://127.0.0.1:5000',  
+    '/notifications': 'http://127.0.0.1:5000',
+    '/uploads':       'http://127.0.0.1:5000', 
+    },
   }
 })

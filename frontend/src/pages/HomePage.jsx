@@ -1,11 +1,9 @@
-// HomePage.jsx — news feed with article click support + responsive layout
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Masthead from '../components/Masthead'
 import Badge from '../components/Badge'
 import SecRule from '../components/SecRule'
 import { CATEGORIES } from '../utils/constants'
-import { DEMO_ARTICLES } from '../data/demoData'
+import { fetchArticles } from '../utils/api'
 
 const ANNOUNCEMENTS = [
   'Exam timetable released — check portal',
@@ -15,10 +13,20 @@ const ANNOUNCEMENTS = [
 ]
 
 export default function HomePage({ onNav, onArticleClick }) {
-  const [cat, setCat] = useState('All')
+  const [cat, setCat]         = useState('All')
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading]   = useState(true)
   const click = onArticleClick || (() => {})
 
-  const articles = cat === 'All' ? DEMO_ARTICLES : DEMO_ARTICLES.filter(a => a.cat === cat)
+  // Fetch articles from Flask whenever category changes
+  useEffect(() => {
+    setLoading(true)
+    fetchArticles(cat)
+      .then(data => setArticles(data.articles || []))
+      .catch(() => setArticles([]))
+      .finally(() => setLoading(false))
+  }, [cat])
+
   const [hero, ...rest] = articles
   const secondary = rest.slice(0, 2)
   const latest    = rest.slice(2, 4)
@@ -63,7 +71,9 @@ export default function HomePage({ onNav, onArticleClick }) {
           </div>
         </div>
 
-        {!hero ? (
+        {loading ? (
+          <div style={{ padding: 60, textAlign: 'center', color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>Loading articles…</div>
+        ) : !hero ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>No articles in this category yet.</div>
         ) : (
           <>

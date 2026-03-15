@@ -9,7 +9,7 @@
  *  so you can leave this as an empty string while developing locally.
  *  For production set it to your deployed Flask URL, e.g. "https://myapp.onrender.com"
  */
-export const API_BASE = ''
+export const API_BASE = 'http://127.0.0.1:5000'
 
 /** Colours for each news category — used by Badge and article cards */
 export const CATEGORY_COLORS = {

@@ -1,28 +1,47 @@
 // NotificationsPage.jsx — responsive notification center
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Ticker from '../components/Ticker'
 import { Btn, TbBtn } from '../components/Buttons'
 import { NOTIF_COLORS } from '../utils/constants'
-import { DEMO_NOTIFICATIONS } from '../data/demoData'
+import { fetchNotifications, markNotifRead, markAllNotifsRead, dismissNotif } from '../utils/api'
 
 const FILTER_OPTIONS = ['all', 'unread', 'approval', 'comment', 'announcement']
 
 export default function NotificationsPage({ onBack }) {
-  const [notifs, setNotifs] = useState(DEMO_NOTIFICATIONS)
-  const [filter, setFilter] = useState('all')
+  const [notifs,  setNotifs]  = useState([])
+  const [filter,  setFilter]  = useState('all')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchNotifications()
+      .then(data => setNotifs(data.notifications || []))
+      .catch(() => setNotifs([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered =
-    filter === 'all'    ? notifs :
-    filter === 'unread' ? notifs.filter(n => !n.read) :
-                          notifs.filter(n => n.type === filter)
+    filter === 'all'      ? notifs :
+    filter === 'unread'   ? notifs.filter(n => !n.is_read) :
+    filter === 'approval' ? notifs.filter(n => n.type === 'approved' || n.type === 'rejected') :
+                            notifs.filter(n => n.type === filter)
 
-  const unreadCount = notifs.filter(n => !n.read).length
+  const unreadCount = notifs.filter(n => !n.is_read).length
 
-  const markRead = id => setNotifs(p => p.map(n => n.id === id ? { ...n, read: true } : n))
-  const markAll  = ()  => setNotifs(p => p.map(n => ({ ...n, read: true })))
-  const dismiss  = id  => setNotifs(p => p.filter(n => n.id !== id))
+  const markRead = async id => {
+    await markNotifRead(id)
+    setNotifs(p => p.map(n => n.id === id ? { ...n, is_read: true } : n))
+  }
 
+  const markAll = async () => {
+    await markAllNotifsRead()
+    setNotifs(p => p.map(n => ({ ...n, is_read: true })))
+  }
+
+  const dismiss = async id => {
+    await dismissNotif(id)
+    setNotifs(p => p.filter(n => n.id !== id))
+  }
   return (
     <div>
       {/* Topbar */}
@@ -70,25 +89,29 @@ export default function NotificationsPage({ onBack }) {
             ))}
           </div>
 
-          {/* Notifications list */}
-          {filtered.length === 0 ? (
+         {/* Notifications list */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>Loading notifications…</div>
+          ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#6b5c4e', fontFamily: "'Source Sans 3',sans-serif" }}>No notifications found.</div>
           ) : filtered.map(n => (
             <div key={n.id} onClick={() => markRead(n.id)} style={{
               display: 'flex', gap: 13, padding: 15, marginBottom: 9,
-              border: `1px solid ${n.read ? '#e8dcc8' : '#c8960c'}`,
+              border: `1px solid ${n.is_read ? '#e8dcc8' : '#c8960c'}`,
               borderLeft: `4px solid ${NOTIF_COLORS[n.type] || '#1a1008'}`,
-              background: n.read ? '#fffef7' : '#fff8e8', cursor: 'pointer', transition: 'all .2s',
+              background: n.is_read ? '#fffef7' : '#fff8e8', cursor: 'pointer', transition: 'all .2s',
             }}>
-              <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{n.icon}</div>
+              <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>
+                {n.type === 'approved' ? '✅' : n.type === 'rejected' ? '❌' : '📢'}
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: '#1a1008', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {n.title}
-                  {!n.read && <span style={{ background: '#b5121b', color: '#fff', fontFamily: "'Source Sans 3',sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', padding: '2px 6px' }}>NEW</span>}
+                  {!n.is_read && <span style={{ background: '#b5121b', color: '#fff', fontFamily: "'Source Sans 3',sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', padding: '2px 6px' }}>NEW</span>}
                 </div>
-                <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 12, color: '#4a3a2a', lineHeight: 1.6, marginBottom: 5 }}>{n.body}</div>
+                <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 12, color: '#4a3a2a', lineHeight: 1.6, marginBottom: 5 }}>{n.message}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                  <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 10, color: '#6b5c4e' }}>{n.time}</div>
+                  <div style={{ fontFamily: "'Source Sans 3',sans-serif", fontSize: 10, color: '#6b5c4e' }}>{n.dt}</div>
                   <button onClick={e => { e.stopPropagation(); dismiss(n.id) }} style={{ background: 'none', border: 'none', color: '#b5121b', cursor: 'pointer', fontFamily: "'Source Sans 3',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', padding: '2px 7px' }}>Dismiss</button>
                 </div>
               </div>

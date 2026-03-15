@@ -78,17 +78,20 @@ export function TbBtn({ children, red, onClick }) {
 }
 
 // ── Full-width submit button (auth pages) ──────────────────────────────────
-export function Sbtn({ children, onClick }) {
+export function Sbtn({ children, onClick, disabled }) {
   const [hov, setHov] = useState(false)
   return (
     <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      onClick={disabled ? undefined : onClick}
+      onMouseEnter={() => !disabled && setHov(true)}
+      onMouseLeave={() => setHov(false)}          // ✅ added back
+      disabled={disabled}                          // ✅ added
       style={{
         width: '100%',
         padding: 12,
-        background: hov ? '#b5121b' : '#1a1008',
+        background: disabled ? '#9a8878'           // ✅ gray when disabled
+                  : hov      ? '#b5121b'           // red on hover
+                  :             '#1a1008',         // normal dark
         color: '#fdf6e3',
         border: 'none',
         fontFamily: "'Source Sans 3', sans-serif",
@@ -96,8 +99,9 @@ export function Sbtn({ children, onClick }) {
         fontWeight: 700,
         letterSpacing: '.15em',
         textTransform: 'uppercase',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',  // ✅ shows ⊘
         transition: 'background .2s',
+        opacity: disabled ? 0.7 : 1,               // ✅ faded when disabled
       }}
     >
       {children}

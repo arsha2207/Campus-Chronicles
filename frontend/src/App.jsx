@@ -7,7 +7,7 @@
 //    articleReturnPage — which page to go back to from ArticlePage
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import LoginPage         from './pages/LoginPage'
 import RegisterPage      from './pages/RegisterPage'
@@ -27,6 +27,25 @@ export default function App() {
   const [user, setUser]                       = useState(null)
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [articleReturnPage, setArticleReturnPage] = useState('home')
+
+  useEffect(() => {
+  const token = localStorage.getItem('cc_token')
+  if (!token) { setPage('login'); return }
+
+  // Decode JWT and check expiry
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (payload.exp * 1000 < Date.now()) {
+      // Token expired — logout
+      localStorage.removeItem('cc_token')
+      localStorage.removeItem('cc_user')
+      setUser(null)
+      setPage('login')
+    }
+  } catch {
+    setPage('login')
+  }
+}, [])
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const handleLogin = (loggedInUser) => {
