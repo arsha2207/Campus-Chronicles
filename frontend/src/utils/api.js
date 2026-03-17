@@ -15,25 +15,25 @@
 //    CORS(app)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { API_BASE } from './constants'
+import { API_BASE } from "./constants";
 
 // ── Token helpers ──────────────────────────────────────────────────────────
-export const getToken  = ()      => localStorage.getItem('cc_token')
-export const saveToken = (token) => localStorage.setItem('cc_token', token)
-export const clearToken = ()     => localStorage.removeItem('cc_token')
+export const getToken = () => localStorage.getItem("cc_token");
+export const saveToken = (token) => localStorage.setItem("cc_token", token);
+export const clearToken = () => localStorage.removeItem("cc_token");
 
 // ── Base fetch wrapper ─────────────────────────────────────────────────────
 async function request(path, options = {}) {
-  const token = getToken()
+  const token = getToken();
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
-  }
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || 'Request failed')
-  return data
+  };
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Request failed");
+  return data;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -47,10 +47,10 @@ async function request(path, options = {}) {
  * Returns: { user: { id, name, role, dept }, token }
  */
 export const login = (email, password) =>
-  request('/login', {
-    method: 'POST',
+  request("/login", {
+    method: "POST",
     body: JSON.stringify({ email, password }),
-  })
+  });
 
 /**
  * Register
@@ -59,10 +59,10 @@ export const login = (email, password) =>
  * Returns: { user: {...}, token }
  */
 export const register = (formData) =>
-  request('/register', {
-    method: 'POST',
+  request("/register", {
+    method: "POST",
     body: JSON.stringify(formData),
-  })
+  });
 
 // ══════════════════════════════════════════════════════════════════════════
 //  ARTICLES
@@ -73,12 +73,12 @@ export const register = (formData) =>
  * GET /api/articles?cat=All&page=1
  * Returns: { articles: [...], total: 42 }
  */
-export const fetchArticles = (cat = 'All', page = 1) => {
-  const params = new URLSearchParams({ cat, page })
-  return request(`/articles/approved?${params}`)
-}
+export const fetchArticles = (cat = "All", page = 1) => {
+  const params = new URLSearchParams({ cat, page });
+  return request(`/articles/approved?${params}`);
+};
 
-export const fetchArticleById = (id) => request(`/articles/${id}`)
+export const fetchArticleById = (id) => request(`/articles/${id}`);
 
 /**
  * Search articles (archive page)
@@ -86,12 +86,12 @@ export const fetchArticleById = (id) => request(`/articles/${id}`)
  * Returns: { results: [...] }
  */
 export const searchArticles = (q, cat, date) => {
-  const params = new URLSearchParams()
-  if (q)    params.set('q',    q)
-  if (cat)  params.set('cat',  cat)
-  if (date) params.set('date', date)   // ← sends as "2025-03-04"
-  return request(`/articles/search?${params}`)
-}
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (cat) params.set("cat", cat);
+  if (date) params.set("date", date); // ← sends as "2025-03-04"
+  return request(`/articles/search?${params}`);
+};
 
 /**
  * Submit a new article (with optional image)
@@ -101,16 +101,16 @@ export const searchArticles = (q, cat, date) => {
  * NOTE: uses FormData so we skip the JSON Content-Type header
  */
 export const submitArticle = async (formData) => {
-  const token = getToken()
+  const token = getToken();
   const res = await fetch(`${API_BASE}/articles/submit`, {
-    method: 'POST',
+    method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData, // FormData handles multipart automatically
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message || 'Submit failed')
-  return data
-}
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Submit failed");
+  return data;
+};
 
 // ══════════════════════════════════════════════════════════════════════════
 //  ADMIN
@@ -121,14 +121,14 @@ export const submitArticle = async (formData) => {
  * GET /api/admin/pending
  * Returns: { articles: [...] }
  */
-export const fetchPending = () => request('/admin/pending')
+export const fetchPending = () => request("/admin/pending");
 
 /**
  * Get approved/published articles
  * GET /api/admin/approved
  * Returns: { articles: [...] }
  */
-export const fetchApproved = () => request('/admin/approved')
+export const fetchApproved = () => request("/admin/approved");
 
 /**
  * Approve an article
@@ -136,7 +136,7 @@ export const fetchApproved = () => request('/admin/approved')
  * Returns: { message: 'Approved' }
  */
 export const approveArticle = (id) =>
-  request(`/admin/approve/${id}`, { method: 'POST' })
+  request(`/admin/approve/${id}`, { method: "POST" });
 
 /**
  * Reject an article
@@ -144,25 +144,25 @@ export const approveArticle = (id) =>
  * Body: { feedback: "..." }  (optional)
  * Returns: { message: 'Rejected' }
  */
-export const rejectArticle = (id, remark = '') =>
+export const rejectArticle = (id, remark = "") =>
   request(`/admin/reject/${id}`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ remark }),
-  })
+  });
 
 /**
  * Get all registered users (admin only)
  * GET /api/admin/users
  * Returns: { users: [...] }
  */
-export const fetchUsers = () => request('/admin/users')
+export const fetchUsers = () => request("/admin/users");
 
 /**
  * Get publication statistics
  * GET /api/admin/stats
  * Returns: { stats: [{ category, count }] }
  */
-export const fetchStats = () => request('/admin/stats')
+export const fetchStats = () => request("/admin/stats");
 
 // ══════════════════════════════════════════════════════════════════════════
 //  NOTIFICATIONS
@@ -173,28 +173,28 @@ export const fetchStats = () => request('/admin/stats')
  * GET /api/notifications
  * Returns: { notifications: [...] }
  */
-export const fetchNotifications = () => request('/notifications')
+export const fetchNotifications = () => request("/notifications");
 
 /**
  * Mark a notification as read
  * PATCH /api/notifications/:id/read
  */
 export const markNotifRead = (id) =>
-  request(`/notifications/${id}/read`, { method: 'PATCH' })
+  request(`/notifications/${id}/read`, { method: "PATCH" });
 
 /**
  * Mark all notifications as read
  * PATCH /api/notifications/read-all
  */
 export const markAllNotifsRead = () =>
-  request('/notifications/read-all', { method: 'PATCH' })
+  request("/notifications/read-all", { method: "PATCH" });
 
 /**
  * Dismiss (delete) a notification
  * DELETE /api/notifications/:id
  */
 export const dismissNotif = (id) =>
-  request(`/notifications/${id}`, { method: 'DELETE' })
+  request(`/notifications/${id}`, { method: "DELETE" });
 
 // ══════════════════════════════════════════════════════════════════════════
 //  AI FORMATTER  (can be proxied through Flask to keep your key secure)
@@ -210,7 +210,7 @@ export const dismissNotif = (id) =>
  * This keeps your Anthropic API key on the server, not the browser.
  */
 export const formatWithAI = (title, content) =>
-  request('/ai/format', {
-    method: 'POST',
+  request("/ai/format", {
+    method: "POST",
     body: JSON.stringify({ title, content }),
-  })
+  });
