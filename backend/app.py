@@ -11,6 +11,8 @@ from routes.notif_routes import notif_bp
 from routes.ai_routes import ai_bp
 from datetime import timedelta
 from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"]       = "#key#"
