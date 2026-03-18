@@ -6,7 +6,7 @@ import os
 ai_bp = Blueprint("ai", __name__)
 
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 @ai_bp.route("/format", methods=["POST"])
 @jwt_required()

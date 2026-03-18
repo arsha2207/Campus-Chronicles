@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { TbBtn } from './Buttons'
 
-export default function TopBar({ user, onAdmin, onLogout }) {
+export default function TopBar({ user, onAdmin, onLogout, onEpaper }) {  {/* ← added onEpaper */}
   const [time, setTime] = useState(
     new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   )
@@ -30,6 +30,8 @@ export default function TopBar({ user, onAdmin, onLogout }) {
         {user && (
           <span>Welcome, <strong style={{ color: '#c8960c' }}>{user.name}</strong></span>
         )}
+        {/* ── ePaper button ── */}
+        <TbBtn onClick={onEpaper}>📰 e-Paper</TbBtn>   {/* ← added */}
         {user?.role === 'admin' && <TbBtn onClick={onAdmin}>Admin Panel</TbBtn>}
         <TbBtn red onClick={onLogout}>Sign Out</TbBtn>
       </div>

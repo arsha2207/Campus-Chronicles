@@ -1,10 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  App.jsx  (updated — includes ArticlePage routing)
-//  Root component. Owns:
-//    page            — which screen to show
-//    user            — logged-in user object
-//    selectedArticle — article object passed to ArticlePage
-//    articleReturnPage — which page to go back to from ArticlePage
+//  App.jsx  (updated — adds EpaperPage route)
+//  CHANGES FROM ORIGINAL:
+//    1. Import EpaperPage
+//    2. Add {page === 'epaper' && ...} block
+//    3. Pass onEpaper={() => nav('epaper')} to TopBar (optional — or use existing nav)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react'
@@ -17,6 +16,7 @@ import SubmitPage        from './pages/SubmitPage'
 import AdminPage         from './pages/AdminPage'
 import NotificationsPage from './pages/NotificationsPage'
 import SearchPage        from './pages/SearchPage'
+import EpaperPage        from './pages/EpaperPage'   // ← NEW
 
 import TopBar from './components/TopBar'
 import { clearToken } from './utils/api'
@@ -29,25 +29,21 @@ export default function App() {
   const [articleReturnPage, setArticleReturnPage] = useState('home')
 
   useEffect(() => {
-  const token = localStorage.getItem('cc_token')
-  if (!token) { setPage('login'); return }
-
-  // Decode JWT and check expiry
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    if (payload.exp * 1000 < Date.now()) {
-      // Token expired — logout
-      localStorage.removeItem('cc_token')
-      localStorage.removeItem('cc_user')
-      setUser(null)
+    const token = localStorage.getItem('cc_token')
+    if (!token) { setPage('login'); return }
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem('cc_token')
+        localStorage.removeItem('cc_user')
+        setUser(null)
+        setPage('login')
+      }
+    } catch {
       setPage('login')
     }
-  } catch {
-    setPage('login')
-  }
-}, [])
+  }, [])
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser)
     setPage('home')
@@ -59,7 +55,6 @@ export default function App() {
     setPage('login')
   }
 
-  // ── Open article — callable from any page ─────────────────────────────────
   const openArticle = (article, from = 'home') => {
     setSelectedArticle(article)
     setArticleReturnPage(from)
@@ -80,13 +75,27 @@ export default function App() {
 
       {page === 'home' && (
         <>
-          <TopBar user={user} onAdmin={() => setPage('admin')} onLogout={handleLogout} />
+          <TopBar
+            user={user}
+            onAdmin={() => setPage('admin')}
+            onLogout={handleLogout}
+            onEpaper={() => setPage('epaper')}   /* ← pass this to TopBar */
+          />
           <HomePage
             user={user}
             onNav={nav}
             onArticleClick={(article) => openArticle(article, 'home')}
           />
         </>
+      )}
+
+      {/* ── ePaper viewer — NEW ── */}
+      {page === 'epaper' && (
+        <EpaperPage
+          user={user}
+          onBack={() => setPage('home')}
+          onArticleClick={(article) => openArticle(article, 'epaper')}
+        />
       )}
 
       {page === 'article' && selectedArticle && (
