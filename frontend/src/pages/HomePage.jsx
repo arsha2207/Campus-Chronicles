@@ -3,7 +3,7 @@ import Masthead from '../components/Masthead'
 import Badge from '../components/Badge'
 import SecRule from '../components/SecRule'
 import { CATEGORIES } from '../utils/constants'
-import { fetchArticles, fetchArticleById } from '../utils/api'
+import { fetchArticles} from '../utils/api'
 import { API_BASE } from '../utils/constants'
 
 // ─── NOTE ─────────────────────────────────────────────────────────────────────
@@ -20,207 +20,95 @@ const ANNOUNCEMENTS = [
 
 // ─── PDF helpers ──────────────────────────────────────────────────────────────
 
-function getJsPDF() {
-  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF
-  if (window.jsPDF) return window.jsPDF
-  throw new Error('jsPDF not loaded. Add the CDN <script> to public/index.html.')
-}
-
-/** Draws masthead at top of doc; returns y position after it */
-function drawMasthead(doc, W, margin, articleCount) {
-  doc.setFont('times', 'bold')
-  doc.setFontSize(30)
-  doc.setTextColor(26, 16, 8)
-  doc.text('Campus Chronicle', W / 2, 20, { align: 'center' })
-
-  doc.setFont('times', 'italic')
-  doc.setFontSize(9)
-  doc.setTextColor(107, 92, 78)
-  doc.text('The Voice of the Campus · Est. 2021', W / 2, 26, { align: 'center' })
-
+function printNewspaper(articles, sectionLabel = 'Full Edition') {
+  if (!articles.length) return
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
-  doc.setFont('times', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(107, 92, 78)
-  doc.text(`${today}  ·  ${articleCount} Article${articleCount !== 1 ? 's' : ''}`, W / 2, 31, { align: 'center' })
+  const BASE = 'http://127.0.0.1:5000'
+  const src = url => !url ? null : url.startsWith('http') ? url : BASE + url
 
-  doc.setDrawColor(26, 16, 8)
-  doc.setLineWidth(0.8)
-  doc.line(margin, 34, W - margin, 34)
-  doc.setLineWidth(0.25)
-  doc.line(margin, 36, W - margin, 36)
+  const [hero, ...rest] = articles
+  const heroImg = src(hero.image_url || hero.img)
+  const heroBody = (hero.content || hero.body || hero.sm || '').slice(0, 300)
 
-  return 43
-}
+  const rows = []
+  for (let i = 0; i < rest.length; i += 3) rows.push(rest.slice(i, i + 3))
 
-// ─── Image → base64 helper ────────────────────────────────────────────────────
-// Loads an image URL through a canvas so jsPDF can embed it.
-// Returns null if the image fails to load (we just skip it gracefully).
-function loadImageAsBase64(url) {
-  return new Promise((resolve) => {
-    if (!url) return resolve(null)
-    // If the URL is relative (e.g. /uploads/img.jpg) make it absolute
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width  = img.naturalWidth
-        canvas.height = img.naturalHeight
-        canvas.getContext('2d').drawImage(img, 0, 0)
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
-      } catch { resolve(null) }
-    }
-    img.onerror = () => resolve(null)
-    img.src = fullUrl
-  })
-}
+  const html = `<!DOCTYPE html><html><head>
+  <meta charset="UTF-8"/>
+  <title>Campus Chronicles</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Times New Roman',Times,serif;background:#fff;color:#000;}
+    .masthead{text-align:center;padding-bottom:8px;margin-bottom:4px;}
+    .masthead-name{font-size:48pt;font-weight:900;letter-spacing:-2px;line-height:1;}
+    .masthead-sub{font-size:8.5pt;font-style:italic;color:#444;margin-top:3px;letter-spacing:.1em;}
+    .masthead-rule1{border-top:4px solid #000;margin-top:8px;}
+    .masthead-rule2{border-top:1px solid #000;margin-top:2px;margin-bottom:4px;}
+    .masthead-meta{display:flex;justify-content:space-between;font-size:7.5pt;color:#555;padding:3px 0;}
+    .front-rule{border-top:3px solid #000;border-bottom:1px solid #000;padding:3px 0;font-size:7.5pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px;}
+    .front-hero{margin-bottom:10px;padding-bottom:10px;border-bottom:2px double #000;}
+    .front-hero-img{width:100%;max-height:260px;object-fit:cover;display:block;margin-bottom:8px;}
+    .front-hero-hl{font-size:20pt;font-weight:900;line-height:1.12;margin-bottom:4px;}
+    .col-row{display:flex;gap:0;margin-bottom:8px;}
+    .front-col{flex:1;padding:0 10px;}
+    .front-col:first-child{padding-left:0;}
+    .front-col:last-child{padding-right:0;}
+    .col-border{border-left:1px solid #ccc;}
+    .front-col-img{width:100%;max-height:130px;object-fit:cover;display:block;margin-bottom:6px;}
+    .front-col-hl{font-size:11pt;font-weight:900;line-height:1.15;margin-bottom:3px;}
+    .kicker{font-size:6.5pt;font-weight:700;letter-spacing:.22em;color:#b5121b;margin-bottom:4px;text-transform:uppercase;}
+    .byline{font-size:7.5pt;color:#555;font-style:italic;border-top:1px solid #ddd;padding-top:3px;margin-bottom:5px;margin-top:2px;}
+    .body{font-size:9pt;line-height:1.55;color:#222;text-align:justify;}
+    .art-rule{border-top:1px solid #ccc;margin:8px 0;}
+    @page{size:A4;margin:12mm 14mm;}
+    @media print{body{padding:0;}}
+  </style>
+  </head><body>
+  <div class="masthead">
+    <div class="masthead-name">Campus Chronicles</div>
+    <div class="masthead-sub">The Voice of the Campus · Est. 2021</div>
+    <div class="masthead-rule1"></div>
+    <div class="masthead-rule2"></div>
+    <div class="masthead-meta">
+      <span>${today}</span>
+      <span>${sectionLabel} · ${articles.length} Article${articles.length !== 1 ? 's' : ''}</span>
+      <span>RIT, Kottayam</span>
+    </div>
+  </div>
+  <div class="front-rule">${sectionLabel}</div>
 
-// ─── Shared: write one article block into an open jsPDF doc ──────────────────
-async function writeArticleBlock(doc, art, startY, W, margin, isFullPage = false) {
-  const colW = (W - margin * 2 - 8) / 2
-  let y = startY
+  <div class="front-hero">
+    ${heroImg ? `<img class="front-hero-img" src="${heroImg}"/>` : ''}
+    <div class="kicker">${(hero.category || hero.cat || 'Campus').toUpperCase()}</div>
+    <div class="front-hero-hl">${hero.title || hero.hl || ''}</div>
+    <div class="byline">By <strong>${hero.author_name || hero.au || 'Staff'}</strong>${hero.dt ? ' · ' + hero.dt : ''}</div>
+    <div class="body">${heroBody}${heroBody.length >= 300 ? '…' : ''}</div>
+  </div>
 
-  const checkY = (need = 20) => {
-    if (y + need > 280) { doc.addPage(); y = margin }
-  }
+  ${rows.map(row => `
+    <div class="col-row">
+      ${row.map((a, ci) => {
+        const aImg = src(a.image_url || a.img)
+        const aBody = (a.content || a.body || a.sm || '').slice(0, 180)
+        return `<div class="front-col${ci > 0 ? ' col-border' : ''}">
+          ${aImg ? `<img class="front-col-img" src="${aImg}"/>` : ''}
+          <div class="kicker">${(a.category || a.cat || 'Campus').toUpperCase()}</div>
+          <div class="front-col-hl">${a.title || a.hl || ''}</div>
+          <div class="byline">By <strong>${a.author_name || a.au || 'Staff'}</strong></div>
+          <div class="body">${aBody}${aBody.length >= 180 ? '…' : ''}</div>
+        </div>`
+      }).join('')}
+    </div>
+    <div class="art-rule"></div>`).join('')}
 
-  // 1. Fetch full article data from Flask
-  let full = art
-  try {
-    const res = await fetchArticleById(art.id)
-    full = res.article || res || art
-  } catch { /* fall back to card data */ }
+  <script>window.onload=function(){window.print();}</script>
+  </body></html>`
 
-  const title    = full.title    || full.hl  || art.hl  || 'Untitled'
-  const author   = full.author_name || full.au || art.au || 'Staff Reporter'
-  const date     = full.published_at || full.created_at || full.dt || art.dt || ''
-  const category = full.category || full.cat || art.cat || 'Campus'
-  const body     = full.content  || full.body || full.text || art.sm || ''
-  const imgUrl   = full.image_url || full.img || art.img || null
-
-  // 2. Embed image if present
-  if (imgUrl) {
-    const b64 = await loadImageAsBase64(imgUrl)
-    if (b64) {
-      checkY(60)
-      // Scale image to fit page width, max 80mm tall
-      const imgW = W - margin * 2
-      const imgH = Math.min(80, imgW * 0.5)
-      doc.addImage(b64, 'JPEG', margin, y, imgW, imgH)
-      y += imgH + 4
-    }
-  }
-
-  // 3. Category kicker
-  checkY(8)
-  doc.setFont('times', 'bold')
-  doc.setFontSize(7.5)
-  doc.setTextColor(181, 18, 27)
-  doc.text(category.toUpperCase(), margin, y)
-  y += 4.5
-
-  // 4. Headline
-  doc.setFont('times', 'bold')
-  doc.setFontSize(isFullPage ? 18 : 14)
-  doc.setTextColor(26, 16, 8)
-  const headLines = doc.splitTextToSize(title, W - margin * 2)
-  headLines.forEach(line => { checkY(9); doc.text(line, margin, y); y += isFullPage ? 8 : 6.5 })
-
-  // 5. Byline + date
-  doc.setFont('times', 'italic')
-  doc.setFontSize(8)
-  doc.setTextColor(107, 92, 78)
-  const dateStr = date ? new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
-  doc.text(`By ${author}${dateStr ? '  ·  ' + dateStr : ''}`, margin, y)
-  y += 4.5
-
-  // 6. Rule under byline
-  doc.setDrawColor(200, 188, 170)
-  doc.setLineWidth(0.2)
-  doc.line(margin, y, W - margin, y)
-  y += 4
-
-  // 7. Body — two columns for edition, single column for individual
-  doc.setFont('times', 'normal')
-  doc.setFontSize(isFullPage ? 11 : 9.5)
-  doc.setTextColor(44, 42, 39)
-
-  if (isFullPage) {
-    // Single wide column for individual article PDF
-    const lines = doc.splitTextToSize(body, W - margin * 2)
-    lines.forEach(line => {
-      checkY(6)
-      doc.text(line, margin, y)
-      y += 5.2
-    })
-  } else {
-    // Two-column layout for edition PDF
-    const allLines = doc.splitTextToSize(body, colW)
-    let col = 0, colY = y
-    const maxColH = 85
-    allLines.forEach(line => {
-      if (col === 0 && colY - y > maxColH) { col = 1; colY = y }
-      else if (col === 1 && colY - y > maxColH) { doc.addPage(); y = margin; col = 0; colY = y }
-      doc.text(line, margin + col * (colW + 8), colY)
-      colY += 4.2
-    })
-    y = Math.max(y + 8, colY + 6)
-  }
-
-  return y
-}
-
-/** Download all articles as one full newspaper-style PDF (async — fetches full content) */
-async function downloadEditionPDF(articles) {
-  if (!articles.length) return
-  const jsPDF = getJsPDF()
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const W = 210, margin = 16
-
-  let y = drawMasthead(doc, W, margin, articles.length)
-
-  for (let idx = 0; idx < articles.length; idx++) {
-    const art = articles[idx]
-    y = await writeArticleBlock(doc, art, y, W, margin, false)
-
-    // Divider between articles
-    if (idx < articles.length - 1) {
-      if (y + 10 > 280) { doc.addPage(); y = margin }
-      doc.setDrawColor(26, 16, 8)
-      doc.setLineWidth(0.5)
-      doc.line(margin, y, W - margin, y)
-      y += 8
-    }
-  }
-
-  doc.save('CampusChronicle_Edition.pdf')
-}
-
-/** Download a single article as its own full PDF (async — fetches full content) */
-async function downloadArticlePDF(art) {
-  const jsPDF = getJsPDF()
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const W = 210, margin = 20
-
-  // Masthead strip
-  doc.setFont('times', 'bold')
-  doc.setFontSize(13)
-  doc.setTextColor(26, 16, 8)
-  doc.text('Campus Chronicle', W / 2, 12, { align: 'center' })
-  doc.setDrawColor(26, 16, 8)
-  doc.setLineWidth(0.6)
-  doc.line(margin, 14.5, W - margin, 14.5)
-  doc.setLineWidth(0.2)
-  doc.line(margin, 16, W - margin, 16)
-
-  await writeArticleBlock(doc, art, 22, W, margin, true)
-
-  const slug = (art.hl || art.title || 'article').replace(/\s+/g, '_').slice(0, 40)
-  doc.save(`${slug}.pdf`)
+  const w = window.open('', '_blank', 'width=900,height=700')
+  w.document.write(html)
+  w.document.close()
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -257,22 +145,14 @@ export default function HomePage({ onNav, onArticleClick }) {
     if (['submit', 'notifications', 'search'].includes(id)) { onNav(id) } else { setCat(id) }
   }
 
-  const handleDownloadEdition = async () => {
-    if (!articles.length || pdfLoading) return
-    setPdfLoading(true)
-    try { await downloadEditionPDF(articles) }
-    catch (e) { alert('PDF error: ' + e.message) }
-    finally { setPdfLoading(false) }
-  }
+  const handleDownloadEdition = () => {
+  printNewspaper(articles, cat === 'All' ? 'Full Edition' : cat)
+}
 
-  // Wrapper so per-article buttons also show the spinner
-  const handleDownloadArticle = async (e, art) => {
-    e.stopPropagation()
-    setPdfLoading(true)
-    try { await downloadArticlePDF(art) }
-    catch (err) { alert('PDF error: ' + err.message) }
-    finally { setPdfLoading(false) }
-  }
+const handleDownloadArticle = (e, art) => {
+  e.stopPropagation()
+  printNewspaper([art], art.hl || art.title || 'Article')
+}
 
   return (
     <div>
@@ -377,7 +257,7 @@ export default function HomePage({ onNav, onArticleClick }) {
       <div style={{ maxWidth: 1280, margin: '0 auto', background: '#fdf6e3', boxShadow: '0 0 50px rgba(0,0,0,.28)' }}>
         <div style={{ padding: '14px 22px 0' }}>
           <div style={{ borderTop: '1px solid #1a1008', borderBottom: '1px solid #1a1008', padding: '4px 0', textAlign: 'center', fontFamily: "'Source Sans 3',sans-serif", fontSize: 10, letterSpacing: '.2em', textTransform: 'uppercase', color: '#6b5c4e' }}>
-            Wednesday, March 4, 2025 · Campus Edition
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · Campus Edition
           </div>
         </div>
 

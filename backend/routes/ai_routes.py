@@ -1,12 +1,11 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from groq import Groq
+import google.generativeai as genai
 import os
 
 ai_bp = Blueprint("ai", __name__)
 
-
-# client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 @ai_bp.route("/format", methods=["POST"])
 @jwt_required()
@@ -19,21 +18,32 @@ def format_article():
         return jsonify({"message": "Content is required"}), 400
 
     try:
-        response = client.chat.completions.create(
-            model      = "llama3-8b-8192",   # free, fast Llama 3 model on Groq
-            max_tokens = 1000,
-            messages   = [
-                {
-                    "role": "system",
-                    "content": "You are a professional newspaper editor. Format and improve articles for a college newspaper. Fix grammar, improve structure, use formal newspaper style. Return only the formatted article starting with the headline."
-                },
-                {
-                    "role": "user",
-                    "content": f"Title: {title}\n\nContent: {content}"
-                }
-            ]
-        )
-        formatted = response.choices[0].message.content
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        prompt = f"""You are a professional newspaper editor for a college newspaper.
+
+Your job is to enhance and format the following article submission:
+- Improve and sharpen the headline
+- Add a compelling subheading (one line summary)
+- Fix grammar, spelling, and punctuation
+- Improve sentence structure and flow
+- Use formal newspaper style
+- Keep the original meaning and facts intact
+
+Return the result in this exact format:
+HEADLINE: <improved headline>
+SUBHEADING: <one line subheading>
+CONTENT:
+<improved article body>
+
+Article to format:
+Title: {title}
+
+Content:
+{content}"""
+
+        response = model.generate_content(prompt)
+        formatted = response.text
         return jsonify({"formatted": formatted})
 
     except Exception as e:

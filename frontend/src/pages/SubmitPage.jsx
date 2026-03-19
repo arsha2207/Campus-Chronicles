@@ -37,20 +37,38 @@ const runAI = async () => {
   try {
     const data = await formatWithAI(title, content)
     console.log('AI response:', data)
-    setAiText(data.formatted || 'AI unavailable.')
+    if (data.formatted) {
+      setAiText(data.formatted)
+    } else if (data.message) {
+      // Backend returned an error message
+      show('AI error: ' + data.message, 'error')
+      setAiText('')
+    } else {
+      show('AI returned empty response.', 'error')
+      setAiText('')
+    }
   } catch (e) {
-    console.error('AI error:', e.message)   // ← shows exact error
-    setAiText('AI formatting unavailable. Please edit manually.')
+    console.error('AI error:', e.message)
+    show('AI formatting failed: ' + e.message, 'error')
+    setAiText('')
   }
   setAiLoad(false)
 }
 
   const applyAI = () => {
-    const lines = aiText.split('\n').filter(l => l.trim())
-    if (lines[0]) setTitle(lines[0])
-    setContent(lines.slice(1).join('\n'))
-    setAiText('')
+  // Parse the structured response from Gemini
+  const headlineMatch = aiText.match(/HEADLINE:\s*(.+)/i)
+  const subheadMatch  = aiText.match(/SUBHEADING:\s*(.+)/i)
+  const contentMatch  = aiText.match(/CONTENT:\s*([\s\S]+)/i)
+
+  if (headlineMatch) setTitle(headlineMatch[1].trim())
+  if (contentMatch)  setContent(contentMatch[1].trim())
+  // If parsing fails completely, keep original content — don't wipe it
+  if (!headlineMatch && !contentMatch) {
+    show('Could not parse AI response. Your original content is kept.', 'error')
   }
+  setAiText('')
+}
 
   const handleSubmit = async () => {
     try {
