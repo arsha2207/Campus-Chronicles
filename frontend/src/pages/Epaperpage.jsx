@@ -23,31 +23,52 @@ function sortNewest(arts) {
 // ─── shared CSS ───────────────────────────────────────────────────────────────
 const PRINT_CSS = `
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Times New Roman',Times,serif;color:#000;font-size:9pt;background:#fff;}
-img{display:block;width:100%;height:auto;max-height:150px;object-fit:contain;margin-bottom:3px;background:#f5f5f5;}
-img.hero-img{max-height:220px;}
-.ki{font-size:6pt;font-weight:700;letter-spacing:.18em;color:#b5121b;text-transform:uppercase;margin-bottom:1px;}
-.hl{font-size:11pt;font-weight:900;line-height:1.1;margin-bottom:1px;}
-.hl.big{font-size:16pt;}
-.by{font-size:7pt;color:#555;font-style:italic;margin-bottom:2px;}
-.bd{font-size:8.5pt;line-height:1.45;color:#111;text-align:justify;}
-.hr{border-top:1px solid #ccc;margin:3px 0;}
-.hr.dbl{border-top:2px double #000;margin:4px 0;}
-.row{display:flex;align-items:flex-start;}
-.col{flex:1;padding:0 5px;}
+
+@page{size:A4;margin:14mm 12mm 18mm 12mm;}
+@page:first{margin-top:10mm;}
+
+@page{
+  @bottom-center{content:counter(page);font-family:'Times New Roman',serif;font-size:9pt;color:#555;}
+  @bottom-left{content:"Campus Chronicles";font-family:'Times New Roman',serif;font-size:8pt;color:#888;font-style:italic;}
+  @bottom-right{content:"RIT, Kottayam";font-family:'Times New Roman',serif;font-size:8pt;color:#888;font-style:italic;}
+}
+
+body{font-family:'Times New Roman',Times,serif;color:#000;font-size:9pt;background:#fff;counter-reset:page 1;}
+
+img{display:block;width:100%;height:auto;max-height:160px;object-fit:cover;margin-bottom:4px;background:#f5f5f5;page-break-inside:avoid;}
+img.hero-img{max-height:230px;}
+
+.ki{font-size:6pt;font-weight:700;letter-spacing:.18em;color:#b5121b;text-transform:uppercase;margin-bottom:2px;}
+.hl{font-size:11pt;font-weight:900;line-height:1.15;margin-bottom:2px;page-break-after:avoid;}
+.hl.big{font-size:17pt;line-height:1.1;}
+.by{font-size:7pt;color:#555;font-style:italic;margin-bottom:3px;page-break-after:avoid;}
+.bd{font-size:8.5pt;line-height:1.55;color:#111;text-align:justify;orphans:3;widows:3;}
+
+.hr{border:none;border-top:1px solid #ccc;margin:5px 0;}
+.hr.dbl{border:none;border-top:2px double #000;margin:6px 0;}
+
+.row{display:flex;align-items:flex-start;page-break-inside:avoid;gap:0;}
+.col{flex:1;padding:0 7px;page-break-inside:avoid;}
 .col:first-child{padding-left:0;}
 .col:last-child{padding-right:0;}
 .col+.col{border-left:1px solid #bbb;}
-.mh{text-align:center;border-bottom:3px solid #000;padding-bottom:3px;margin-bottom:2px;}
-.mh-name{font-size:36pt;font-weight:900;letter-spacing:-1px;line-height:1;}
+
+.mh{text-align:center;border-bottom:3px solid #000;padding-bottom:4px;margin-bottom:3px;}
+.mh-name{font-size:38pt;font-weight:900;letter-spacing:-1px;line-height:1;}
 .mh-sub{font-size:7.5pt;font-style:italic;color:#444;}
 .mh-meta{display:flex;justify-content:space-between;font-size:7pt;color:#555;border-top:1px solid #000;padding-top:2px;margin-top:2px;}
-.cat-bar{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #000;padding-bottom:2px;margin-bottom:2px;margin-top:8px;}
-.cat-nm{font-size:12pt;font-weight:900;}
+
+.cat-bar{display:flex;justify-content:space-between;align-items:baseline;border-top:4px solid #000;border-bottom:1px solid #000;padding:3px 0;margin-bottom:4px;margin-top:10px;page-break-after:avoid;page-break-inside:avoid;}
+.cat-bar+*{page-break-before:avoid;}
+.cat-nm{font-size:13pt;font-weight:900;}
 .cat-dt{font-size:6.5pt;color:#555;}
-.sec{border-top:2px solid #000;border-bottom:1px solid #000;padding:1px 0;font-size:7pt;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:3px;}
-@page{size:A4;margin:7mm 9mm;}
-@media print{body{padding:0;}}
+
+.sec{border-top:2px solid #000;border-bottom:1px solid #000;padding:1px 0;font-size:7pt;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px;page-break-after:avoid;}
+.sec+*{page-break-before:avoid;}
+
+.art-block{page-break-inside:avoid;}
+
+@media print{body{padding:0;}.no-print{display:none;}}
 `
 
 function iSrc(url) {
@@ -63,11 +84,13 @@ function artBlock(a, big = false) {
   const dt   = a.dt || ''
   const body = a.content || a.body || a.sm || ''
   return `
-    ${img ? `<img src="${img}"${big ? ' class="hero-img"' : ''} />` : ''}
-    <div class="ki">${cat}</div>
-    <div class="hl${big ? ' big' : ''}">${hl}</div>
-    <div class="by">By <strong>${auth}</strong>${dt ? ' · ' + dt : ''}</div>
-    <div class="bd">${big ? body : body.slice(0, 220) + (body.length > 220 ? '…' : '')}</div>`
+    <div class="art-block">
+      ${img ? `<img src="${img}"${big ? ' class="hero-img"' : ''} />` : ''}
+      <div class="ki">${cat}</div>
+      <div class="hl${big ? ' big' : ''}">${hl}</div>
+      <div class="by">By <strong>${auth}</strong>${dt ? ' · ' + dt : ''}</div>
+      <div class="bd">${big ? body : body.slice(0, 220) + (body.length > 220 ? '…' : '')}</div>
+    </div>`
 }
 
 function artBlockFull(a) {
@@ -78,11 +101,13 @@ function artBlockFull(a) {
   const dt   = a.dt || ''
   const body = a.content || a.body || a.sm || ''
   return `
-    ${img ? `<img src="${img}" class="hero-img" />` : ''}
-    <div class="ki">${cat}</div>
-    <div class="hl big">${hl}</div>
-    <div class="by">By <strong>${auth}</strong>${dt ? ' · ' + dt : ''}</div>
-    <div class="bd">${body}</div>`
+    <div class="art-block">
+      ${img ? `<img src="${img}" class="hero-img" />` : ''}
+      <div class="ki">${cat}</div>
+      <div class="hl big">${hl}</div>
+      <div class="by">By <strong>${auth}</strong>${dt ? ' · ' + dt : ''}</div>
+      <div class="bd">${body}</div>
+    </div>`
 }
 
 // ─── shared category content builder ─────────────────────────────────────────
@@ -133,20 +158,33 @@ function buildFront(arts, today, count) {
 // ─── Category page HTML (used by printSectionOnly) ────────────────────────────
 function buildCat(label, arts, today, isFirst = false) {
   return `
-    <div style="margin-top:6px;">
-      <div class="cat-bar">
-        <span class="cat-nm">Campus Chronicles · ${label}</span>
-        <span class="cat-dt">${today} · RIT, Kottayam</span>
+    <div style="margin-top:6px;page-break-inside:avoid;">
+      <div style="page-break-inside:avoid;page-break-after:avoid;">
+        <div class="cat-bar">
+          <span class="cat-nm">Campus Chronicles · ${label}</span>
+          <span class="cat-dt">${today} · RIT, Kottayam</span>
+        </div>
       </div>
-      ${buildCatContent(arts)}
+      <div style="page-break-before:avoid;">
+        ${buildCatContent(arts)}
+      </div>
     </div>
     <div class="hr dbl"></div>`
 }
 
 function openPrint(body, title) {
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
 <title>${title}</title><style>${PRINT_CSS}</style></head>
-<body>${body}<script>window.onload=function(){window.print();}<\/script></body></html>`
+<body>
+${body}
+<script>
+// Add page numbers manually via JS for browsers that don't support @page margin boxes
+window.onload = function() {
+  window.print();
+}
+<\/script>
+</body></html>`
   const w = window.open('', '_blank', 'width=900,height=700')
   w.document.write(html)
   w.document.close()
@@ -157,13 +195,55 @@ function printFullNewspaper(allArts, catMap) {
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const front = buildFront(allArts, today, allArts.length)
 
-  const catEntries = Object.entries(catMap).filter(([, a]) => a.length)
+  // Build catEntries in SECTIONS order to guarantee consistent page numbering
+  const catEntries = SECTIONS
+    .filter(s => !s.front)
+    .map(s => [s.label, catMap[s.label] || []])
+    .filter(([, arts]) => arts.length > 0)
+
+  const indexRows = catEntries.map(([label, arts], idx) => `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid #ddd;">
+      <div style="display:flex;align-items:baseline;gap:8px;">
+        <span style="font-size:13pt;font-weight:900;">${label}</span>
+        <span style="font-size:8pt;color:#555;font-style:italic;">${arts.length} article${arts.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div style="flex:1;border-bottom:1px dotted #bbb;margin:0 10px;height:1px;align-self:center;"></div>
+      <span style="font-size:11pt;font-weight:700;">${idx + 3}</span>
+    </div>
+  `).join('')
+
+  const indexPage = `
+    <div style="page-break-before:always;page-break-after:always;min-height:100%;display:flex;flex-direction:column;">
+      <div class="mh" style="margin-bottom:16px;">
+        <div class="mh-name">Campus Chronicles</div>
+        <div class="mh-sub">The Voice of the Campus · Est. 2021</div>
+        <div class="mh-meta"><span>${today}</span><span>Index</span><span>RIT, Kottayam</span></div>
+      </div>
+      <div style="border-top:4px solid #000;border-bottom:1px solid #000;padding:4px 0;margin-bottom:16px;">
+        <span style="font-size:14pt;font-weight:900;letter-spacing:.15em;text-transform:uppercase;">Contents</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:2px solid #000;margin-bottom:4px;">
+        <span style="font-size:11pt;font-weight:700;font-style:italic;">Section</span>
+        <span style="font-size:11pt;font-weight:700;font-style:italic;">Page</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid #ddd;">
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:13pt;font-weight:900;">Front Page</span>
+          <span style="font-size:8pt;color:#555;font-style:italic;">Top stories</span>
+        </div>
+        <div style="flex:1;border-bottom:1px dotted #bbb;margin:0 10px;height:1px;align-self:center;"></div>
+        <span style="font-size:11pt;font-weight:700;">1</span>
+      </div>
+      ${indexRows}
+      <div style="margin-top:24px;padding-top:12px;border-top:2px double #000;font-size:8pt;color:#777;font-style:italic;text-align:center;">
+        Campus Chronicles · ${today} · RIT, Kottayam
+      </div>
+    </div>
+  `
 
   const catsHTML = catEntries.map(([label, arts], idx) => {
     const prevArts = idx > 0 ? catEntries[idx - 1][1] : []
-    // Count prev category size: article with image = 3 units, without = 2
     const prevSize = prevArts.reduce((sum, a) => sum + (a.image_url || a.img ? 3 : 2), 0)
-    // If prev category was large (> 4 units = more than half page), force new page
     const needsNewPage = idx > 0 && prevSize > 8
 
     const s2 = sortNewest(arts)
@@ -185,17 +265,21 @@ function printFullNewspaper(allArts, catMap) {
     }
 
     return `
-      <div style="margin-top:6px;${needsNewPage ? 'page-break-before:always;' : ''}">
-        <div class="cat-bar">
-          <span class="cat-nm">Campus Chronicles · ${label}</span>
-          <span class="cat-dt">${today} · RIT, Kottayam</span>
+      <div style="margin-top:6px;${needsNewPage ? 'page-break-before:always;' : ''}page-break-inside:avoid;">
+        <div style="page-break-inside:avoid;page-break-after:avoid;">
+          <div class="cat-bar">
+            <span class="cat-nm">Campus Chronicles · ${label}</span>
+            <span class="cat-dt">${today} · RIT, Kottayam</span>
+          </div>
         </div>
-        ${catContent}
+        <div style="page-break-before:avoid;">
+          ${catContent}
+        </div>
       </div>
       <div class="hr dbl"></div>`
   }).join('')
 
-  openPrint(front + catsHTML, 'Campus Chronicles — Full Edition')
+  openPrint(front + indexPage + catsHTML, 'Campus Chronicles — Full Edition')
 }
 
 function printSectionOnly(arts, label) {
