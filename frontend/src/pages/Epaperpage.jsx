@@ -20,7 +20,7 @@ function sortNewest(arts) {
     new Date(b.published_at || b.created_at || 0) - new Date(a.published_at || a.created_at || 0))
 }
 
-// ─── shared CSS for all print windows ────────────────────────────────────────
+// ─── shared CSS ───────────────────────────────────────────────────────────────
 const PRINT_CSS = `
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Times New Roman',Times,serif;color:#000;font-size:9pt;background:#fff;}
@@ -85,6 +85,29 @@ function artBlockFull(a) {
     <div class="bd">${body}</div>`
 }
 
+// ─── shared category content builder ─────────────────────────────────────────
+function buildCatContent(arts) {
+  const s = sortNewest(arts)
+  if (s.length === 1) {
+    return artBlockFull(s[0])
+  }
+  if (s.length === 2) {
+    return `<div class="row">
+      <div class="col">${artBlockFull(s[0])}</div>
+      <div class="col">${artBlockFull(s[1])}</div>
+    </div>`
+  }
+  // 3+ — first full width, rest in 2-col rows
+  const [first, ...rest] = s
+  const rows = []
+  for (let i = 0; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2))
+  return artBlockFull(first) + rows.map(row => `
+    <div class="hr"></div>
+    <div class="row">
+      ${row.map(a => `<div class="col">${artBlockFull(a)}</div>`).join('')}
+    </div>`).join('')
+}
+
 // ─── Front page HTML ──────────────────────────────────────────────────────────
 function buildFront(arts, today, count) {
   const s = sortNewest(arts)
@@ -95,7 +118,7 @@ function buildFront(arts, today, count) {
   return `
     <div class="mh">
       <div class="mh-name">Campus Chronicles</div>
-      <div class="mh-sub">The Voice of the Campus · Est. 2026</div>
+      <div class="mh-sub">The Voice of the Campus · Est. 2021</div>
       <div class="mh-meta"><span>${today}</span><span>Vol. 1 · ${count} Articles</span><span>RIT, Kottayam</span></div>
     </div>
     <div class="sec">Front Page</div>
@@ -107,33 +130,19 @@ function buildFront(arts, today, count) {
       </div>`).join('')}`
 }
 
-// ─── Category page HTML ───────────────────────────────────────────────────────
+// ─── Category page HTML (used by printSectionOnly) ────────────────────────────
 function buildCat(label, arts, today, isFirst = false) {
-  const s = sortNewest(arts)
-  const [first, ...rest] = s
-  const rows = []
-  for (let i = 0; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2))
-
-  // Count approximate "content units" in this category
-  // Each article with image ≈ 3 units, without image ≈ 2 units
-  // If total units > 4 (more than half a page worth), next category gets new page
-  const thisSize = s.reduce((sum, a) => sum + (a.image_url || a.img ? 3 : 2), 0)
-
   return `
-    <div id="cat-${label.replace(/\s+/g,'-')}" data-size="${thisSize}" style="margin-top:6px;">
+    <div style="margin-top:6px;">
       <div class="cat-bar">
         <span class="cat-nm">Campus Chronicles · ${label}</span>
         <span class="cat-dt">${today} · RIT, Kottayam</span>
       </div>
-      ${artBlockFull(first)}
-      ${rows.map(row => `
-        <div class="hr"></div>
-        <div class="row">
-          ${row.map(a => `<div class="col">${artBlockFull(a)}</div>`).join('')}
-        </div>`).join('')}
+      ${buildCatContent(arts)}
     </div>
     <div class="hr dbl"></div>`
 }
+
 function openPrint(body, title) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
 <title>${title}</title><style>${PRINT_CSS}</style></head>
@@ -143,13 +152,50 @@ function openPrint(body, title) {
   w.document.close()
 }
 
-// Public print functions
+// ─── Full newspaper — smart page breaks ───────────────────────────────────────
 function printFullNewspaper(allArts, catMap) {
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const front = buildFront(allArts, today, allArts.length)
-  const cats  = Object.entries(catMap).filter(([,a]) => a.length)
-    .map(([l, a]) => buildCat(l, a, today)).join('')
-  openPrint(front + cats, 'Campus Chronicles — Full Edition')
+
+  const catEntries = Object.entries(catMap).filter(([, a]) => a.length)
+
+  const catsHTML = catEntries.map(([label, arts], idx) => {
+    const prevArts = idx > 0 ? catEntries[idx - 1][1] : []
+    // Count prev category size: article with image = 3 units, without = 2
+    const prevSize = prevArts.reduce((sum, a) => sum + (a.image_url || a.img ? 3 : 2), 0)
+    // If prev category was large (> 4 units = more than half page), force new page
+    const needsNewPage = idx > 0 && prevSize > 8
+
+    const s2 = sortNewest(arts)
+    let catContent = ''
+    if (s2.length === 1) {
+      catContent = artBlockFull(s2[0])
+    } else if (s2.length === 2) {
+      catContent = `<div class="row">
+        <div class="col">${artBlockFull(s2[0])}</div>
+        <div class="col">${artBlockFull(s2[1])}</div>
+      </div>`
+    } else {
+      const [first2, ...rest2] = s2
+      const rows2 = []
+      for (let i = 0; i < rest2.length; i += 2) rows2.push(rest2.slice(i, i + 2))
+      catContent = artBlockFull(first2) + rows2.map(row => `
+        <div class="hr"></div>
+        <div class="row">${row.map(a => `<div class="col">${artBlockFull(a)}</div>`).join('')}</div>`).join('')
+    }
+
+    return `
+      <div style="margin-top:6px;${needsNewPage ? 'page-break-before:always;' : ''}">
+        <div class="cat-bar">
+          <span class="cat-nm">Campus Chronicles · ${label}</span>
+          <span class="cat-dt">${today} · RIT, Kottayam</span>
+        </div>
+        ${catContent}
+      </div>
+      <div class="hr dbl"></div>`
+  }).join('')
+
+  openPrint(front + catsHTML, 'Campus Chronicles — Full Edition')
 }
 
 function printSectionOnly(arts, label) {
@@ -170,7 +216,9 @@ function ArticleBlock({ art, isHero, onClick }) {
   const category = art.cat || art.category || 'Campus'
   const body     = art.sm || art.content || ''
   const img      = art.img || art.image_url || null
-  const date     = art.dt || (art.published_at ? new Date(art.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
+  const date     = art.dt || (art.published_at
+    ? new Date(art.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '')
   return (
     <div style={{ cursor: 'pointer' }} onClick={onClick}>
       {img && <img src={img} alt="" style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block', marginBottom: 8, border: '1px solid #e8e8e8', background: '#f5f5f5' }} onError={e => e.target.hidden = true} />}
@@ -259,14 +307,16 @@ function CategoryPage({ articles, onArticleClick, sectionLabel, currentPage, set
       </div>
       {total > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '16px 0 24px' }}>
-          <button className="ep-page-arrow" disabled={currentPage === 0} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0, 0) }}>‹ Previous</button>
+          <button className="ep-page-arrow" disabled={currentPage === 0}
+            onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0, 0) }}>‹ Previous</button>
           <div style={{ display: 'flex', gap: 6 }}>
             {Array.from({ length: total }).map((_, idx) => (
               <button key={idx} onClick={() => { setCurrentPage(idx); window.scrollTo(0, 0) }}
                 style={{ width: idx === currentPage ? 28 : 8, height: 8, borderRadius: 4, background: idx === currentPage ? '#b5121b' : '#bbb', border: 'none', cursor: 'pointer', padding: 0, transition: 'width .2s,background .2s' }} />
             ))}
           </div>
-          <button className="ep-page-arrow" disabled={currentPage >= total - 1} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0, 0) }}>Next ›</button>
+          <button className="ep-page-arrow" disabled={currentPage >= total - 1}
+            onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0, 0) }}>Next ›</button>
         </div>
       )}
     </div>

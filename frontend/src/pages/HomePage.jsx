@@ -68,7 +68,7 @@ function printNewspaper(articles, sectionLabel = 'Full Edition') {
   </head><body>
   <div class="masthead">
     <div class="masthead-name">Campus Chronicles</div>
-    <div class="masthead-sub">The Voice of the Campus · Est. 2021</div>
+    <div class="masthead-sub">The Voice of the Campus · Est. 2026</div>
     <div class="masthead-rule1"></div>
     <div class="masthead-rule2"></div>
     <div class="masthead-meta">
